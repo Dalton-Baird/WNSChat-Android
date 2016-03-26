@@ -13,6 +13,13 @@ public class PacketDisconnect extends Packet
     /** The reason for disconnecting */
     public String reason;
 
+    public PacketDisconnect() {}
+
+    public PacketDisconnect(String reason)
+    {
+        this.reason = reason;
+    }
+
     @Override
     public void writeToStream(OutputStream stream, ObjectOutputStream writer)
     {

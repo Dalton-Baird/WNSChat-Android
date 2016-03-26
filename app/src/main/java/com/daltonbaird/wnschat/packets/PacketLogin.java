@@ -17,6 +17,15 @@ public class PacketLogin extends Packet
     /** The client's password hash */
     public String passwordHash;
 
+    public PacketLogin() {}
+
+    public PacketLogin(int protocolVersion, String username, String passwordHash)
+    {
+        this.protocolVersion = protocolVersion;
+        this.username = username;
+        this.passwordHash = passwordHash;
+    }
+
     @Override
     public void writeToStream(OutputStream stream, ObjectOutputStream writer)
     {

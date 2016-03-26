@@ -65,18 +65,25 @@ public class NetworkManager
      * @param socket The socket to write to
      * @param packet The packet to write to the stream
      */
-    public void writePacket(Socket socket, Packet packet) throws IOException
+    public void writePacket(Socket socket, Packet packet)
     {
-        ObjectOutputStream writer = new ObjectOutputStream(socket.getOutputStream());
+        try
+        {
+            ObjectOutputStream writer = new ObjectOutputStream(socket.getOutputStream());
 
-        //Find the packet ID for the given packet class
-        int packetID = this.packetMap.keyAt(this.packetMap.indexOfValue(packet.getClass()));
+            //Find the packet ID for the given packet class
+            int packetID = this.packetMap.keyAt(this.packetMap.indexOfValue(packet.getClass()));
 
-        //TODO: Write packet ID in .NET format
+            //TODO: Write packet ID in .NET format
 
-        packet.writeToStream(socket.getOutputStream(), writer); //Tell the packet to write itself to the stream
+            packet.writeToStream(socket.getOutputStream(), writer); //Tell the packet to write itself to the stream
 
-        writer.flush(); //Flush the stream
+            writer.flush(); //Flush the stream
+        }
+        catch (IOException e)
+        {
+            throw new RuntimeException("Error writing packet!", e);
+        }
     }
 
     /**
@@ -84,7 +91,7 @@ public class NetworkManager
      * @param socket The socket to read from
      * @return The packet read from the stream
      */
-    public Packet readPacket(Socket socket) throws IOException, IllegalAccessException, InstantiationException
+    public Packet readPacket(Socket socket)
     {
         try
         {
@@ -104,7 +111,7 @@ public class NetworkManager
             if (e instanceof EOFException)
                 throw new RuntimeException("Connection closed!", e);
 
-            throw e;
+            throw new RuntimeException("Error reading packet!", e);
         }
     }
 }
