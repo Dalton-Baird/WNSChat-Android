@@ -8,9 +8,12 @@ import android.view.MenuItem;
 import android.widget.Toast;
 
 import com.daltonbaird.wnschat.R;
+import com.daltonbaird.wnschat.viewmodels.ChatClientViewModel;
 
 public class ChatActivity extends AppCompatActivity
 {
+    /** The chat client */
+    private ChatClientViewModel chatClient;
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
