@@ -2,14 +2,15 @@ package com.daltonbaird.wnschat;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.net.Socket;
 
 /**
  * Created by Dalton on 3/26/2016.
  */
 public class ServerConnection implements Closeable
 {
-    /** The network stream used to access the socket's data */
-    protected Object stream;
+    /** The socket used to access the server */
+    protected Socket socket;
 
     /** The server's name */
     protected String serverName;
@@ -35,14 +36,14 @@ public class ServerConnection implements Closeable
         return this.serverName;
     }
 
-    public Object getStream()
+    public Socket getSocket()
     {
-        return stream;
+        return socket;
     }
 
-    public void setStream(Object stream)
+    public void setSocket(Socket socket)
     {
-        this.stream = stream;
+        this.socket = socket;
     }
 
     public String getServerName()

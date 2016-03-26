@@ -5,7 +5,10 @@ import com.daltonbaird.wnschat.ServerConnection;
 import com.daltonbaird.wnschat.commands.PermissionLevel;
 import com.daltonbaird.wnschat.functional.Func;
 import com.daltonbaird.wnschat.messages.Message;
+import com.daltonbaird.wnschat.messages.MessageText;
 
+import java.net.InetAddress;
+import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -14,19 +17,19 @@ import java.util.List;
  */
 public class ChatClientViewModel
 {
-    protected Object client;
+    protected Socket client;
 
     protected ClientUser clientUser;
 
     protected ServerConnection server;
 
-    protected Object serverIP;
+    protected InetAddress serverIP;
 
     protected short serverPort;
 
     protected List<Message> messageLog;
 
-    public ChatClientViewModel(String username, Object serverIP, short port)
+    public ChatClientViewModel(String username, InetAddress serverIP, short port)
     {
         this.serverIP = serverIP;
         this.serverPort = port;
@@ -40,12 +43,12 @@ public class ChatClientViewModel
 
     }
 
-    public Object getClient()
+    public Socket getClient()
     {
         return client;
     }
 
-    public void setClient(Object client)
+    public void setClient(Socket client)
     {
         this.client = client;
     }
@@ -70,12 +73,12 @@ public class ChatClientViewModel
         this.server = server;
     }
 
-    public Object getServerIP()
+    public InetAddress getServerIP()
     {
         return serverIP;
     }
 
-    public void setServerIP(Object serverIP)
+    public void setServerIP(InetAddress serverIP)
     {
         this.serverIP = serverIP;
     }
@@ -112,6 +115,9 @@ public class ChatClientViewModel
         try
         {
             //TODO: implement this!
+            this.client = new Socket(this.serverIP, this.serverPort);
+
+            this.displayMessage(String.format("Connecting to server at %s:%d...", this.serverIP, this.serverPort));
         }
         catch (Exception e)
         {
@@ -168,5 +174,23 @@ public class ChatClientViewModel
         //Login stuff
         //this.server.setServerName(serverInfo.serverName);
         //this.server.setUserCount(serverInfo.userCount);
+    }
+
+    /**
+     * Displays a MessageText to the user with the specified string as the text
+     * @param message The string to display
+     */
+    public void displayMessage(String message)
+    {
+        this.displayMessage(new MessageText(message));
+    }
+
+    /**
+     * Displays a message to the user
+     * @param message The message to display
+     */
+    public void displayMessage(Message message)
+    {
+        //TODO: Implement this!
     }
 }
