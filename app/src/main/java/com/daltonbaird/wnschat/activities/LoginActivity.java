@@ -2,6 +2,7 @@ package com.daltonbaird.wnschat.activities;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
@@ -160,15 +161,22 @@ public class LoginActivity extends AppCompatActivity
                     InetAddress.getByName(editTextServerIP.getText().toString()),
                     Short.parseShort(editTextServerPort.getText().toString()));
 
-            ChatActivity.chatClient.connectToServer(new Func<String>()
+            new Thread()
             {
                 @Override
-                public String invoke()
+                public void run()
                 {
-                    Toast.makeText(LoginActivity.this, "Server requires a password, giving it an empty one since getting a password is not yet implemented.", Toast.LENGTH_LONG).show();
-                    return "";
+                    ChatActivity.chatClient.connectToServer(new Func<String>()
+                    {
+                        @Override
+                        public String invoke()
+                        {
+                            Toast.makeText(LoginActivity.this, "Server requires a password, giving it an empty one since getting a password is not yet implemented.", Toast.LENGTH_LONG).show();
+                            return "";
+                        }
+                    });
                 }
-            });
+            }.start();
 
             //Start the ChatActivity
             Intent intent = new Intent(this, ChatActivity.class);

@@ -18,10 +18,10 @@ public class ServerConnection implements Closeable
     /** The user count on the server */
     protected int userCount;
 
-    public ServerConnection(Object client)
+    public ServerConnection(Socket socket)
     {
-        //this.stream = client.getStream();
-        this.serverName = String.format("Server@%s", client);
+        this.socket = socket;
+        this.serverName = String.format("Server@%s", socket.getInetAddress());
     }
 
     @Override

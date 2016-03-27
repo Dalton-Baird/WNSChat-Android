@@ -17,6 +17,8 @@ import com.daltonbaird.wnschat.packets.PacketUserInfo;
 import com.daltonbaird.wnschat.utilities.MathUtils;
 
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.security.MessageDigest;
@@ -188,6 +190,13 @@ public class ChatClientViewModel
         catch (Exception e)
         {
             this.displayMessage(String.format("Error encountered in client loop: %s", e));
+
+            //TODO: Find a better way to do this
+            StringWriter sw = new StringWriter();
+            PrintWriter pw = new PrintWriter(sw);
+            e.printStackTrace(pw);
+            this.displayMessage(sw.toString());
+
             this.disconnectFromServer("Encountered an error while connecting", true, null);
             return false;
         }

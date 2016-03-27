@@ -4,8 +4,6 @@ import com.daltonbaird.wnschat.utilities.BinaryHelper;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 
 /**
@@ -15,6 +13,13 @@ public class PacketSimpleMessage extends Packet
 {
     /** The message that the packet contains */
     public String message;
+
+    public PacketSimpleMessage() {}
+
+    public PacketSimpleMessage(String message)
+    {
+        this.message = message;
+    }
 
     @Override
     public void writeToStream(OutputStream stream) throws IOException
