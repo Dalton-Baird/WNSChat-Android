@@ -1,5 +1,8 @@
 package com.daltonbaird.wnschat.packets;
 
+import com.daltonbaird.wnschat.utilities.BinaryHelper;
+
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -27,14 +30,18 @@ public class PacketLogin extends Packet
     }
 
     @Override
-    public void writeToStream(OutputStream stream, ObjectOutputStream writer)
+    public void writeToStream(OutputStream stream) throws IOException
     {
-        //TODO: implement this!
+        BinaryHelper.writeUInt32(stream, this.protocolVersion);
+        BinaryHelper.writeString(stream, this.username);
+        BinaryHelper.writeString(stream, this.passwordHash);
     }
 
     @Override
-    public void readFromStream(InputStream stream, ObjectInputStream writer)
+    public void readFromStream(InputStream stream) throws IOException
     {
-        //TODO: implement this!
+        this.protocolVersion = BinaryHelper.readUInt32(stream);
+        this.username = BinaryHelper.readString(stream);
+        this.passwordHash = BinaryHelper.readString(stream);
     }
 }

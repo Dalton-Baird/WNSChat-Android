@@ -9,12 +9,10 @@ import com.daltonbaird.wnschat.packets.PacketPing;
 import com.daltonbaird.wnschat.packets.PacketServerInfo;
 import com.daltonbaird.wnschat.packets.PacketSimpleMessage;
 import com.daltonbaird.wnschat.packets.PacketUserInfo;
+import com.daltonbaird.wnschat.utilities.BinaryHelper;
 
 import java.io.EOFException;
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.OutputStream;
 import java.net.Socket;
 
 /**
@@ -69,16 +67,12 @@ public class NetworkManager
     {
         try
         {
-            ObjectOutputStream writer = new ObjectOutputStream(socket.getOutputStream());
-
             //Find the packet ID for the given packet class
-            int packetID = this.packetMap.keyAt(this.packetMap.indexOfValue(packet.getClass()));
+            byte packetID = (byte) this.packetMap.keyAt(this.packetMap.indexOfValue(packet.getClass()));
 
-            //TODO: Write packet ID in .NET format
+            BinaryHelper.writeByte(socket.getOutputStream(), packetID);
 
-            packet.writeToStream(socket.getOutputStream(), writer); //Tell the packet to write itself to the stream
-
-            writer.flush(); //Flush the stream
+            packet.writeToStream(socket.getOutputStream()); //Tell the packet to write itself to the stream
         }
         catch (IOException e)
         {
@@ -95,15 +89,13 @@ public class NetworkManager
     {
         try
         {
-            ObjectInputStream reader = new ObjectInputStream(socket.getInputStream());
-
-            short packetID = 0; //TODO: read this in .NET format
+            short packetID = BinaryHelper.readByte(socket.getInputStream());
 
             Class<? extends Packet> packetClass = this.packetMap.get(packetID);
 
             Packet packet = packetClass.newInstance(); //Create the packet object
 
-            packet.readFromStream(socket.getInputStream(), reader); //Have the packet read from the stream
+            packet.readFromStream(socket.getInputStream()); //Have the packet read from the stream
             return packet;
         }
         catch (IOException|InstantiationException|IllegalAccessException e)

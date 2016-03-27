@@ -1,5 +1,6 @@
 package com.daltonbaird.wnschat.packets;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -13,14 +14,12 @@ public abstract class Packet
     /**
      * Writes the packet to the output stream.
      * @param stream The raw OutputStream
-     * @param writer The more advanced ObjectOutputStream, use this for writing
      */
-    public abstract void writeToStream(OutputStream stream, ObjectOutputStream writer);
+    public abstract void writeToStream(OutputStream stream) throws IOException;
 
     /**
      * Reads the packet from the input stream
      * @param stream The raw InputStream
-     * @param writer The ObjectInputStream, use this for reading
      */
-    public abstract void readFromStream(InputStream stream, ObjectInputStream writer);
+    public abstract void readFromStream(InputStream stream) throws IOException;
 }

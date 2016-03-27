@@ -1,8 +1,9 @@
 package com.daltonbaird.wnschat.packets;
 
+import com.daltonbaird.wnschat.utilities.BinaryHelper;
+
+import java.io.IOException;
 import java.io.InputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 
 /**
@@ -20,14 +21,20 @@ public class PacketServerInfo extends Packet
     public String serverName;
 
     @Override
-    public void writeToStream(OutputStream stream, ObjectOutputStream writer)
+    public void writeToStream(OutputStream stream) throws IOException
     {
-        //TODO: implement this!
+        BinaryHelper.writeUInt32(stream, this.protocolVersion);
+        BinaryHelper.writeInt32(stream, this.userCount);
+        BinaryHelper.writeBoolean(stream, this.passwordRequired);
+        BinaryHelper.writeString(stream, this.serverName);
     }
 
     @Override
-    public void readFromStream(InputStream stream, ObjectInputStream writer)
+    public void readFromStream(InputStream stream) throws IOException
     {
-        //TODO: implement this!
+        this.protocolVersion = BinaryHelper.readUInt32(stream);
+        this.userCount = BinaryHelper.readInt32(stream);
+        this.passwordRequired = BinaryHelper.readBoolean(stream);
+        this.serverName = BinaryHelper.readString(stream);
     }
 }

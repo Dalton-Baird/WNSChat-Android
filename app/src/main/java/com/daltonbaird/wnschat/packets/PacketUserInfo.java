@@ -1,10 +1,10 @@
 package com.daltonbaird.wnschat.packets;
 
 import com.daltonbaird.wnschat.commands.PermissionLevel;
+import com.daltonbaird.wnschat.utilities.BinaryHelper;
 
+import java.io.IOException;
 import java.io.InputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 
 /**
@@ -18,14 +18,16 @@ public class PacketUserInfo extends Packet
     public PermissionLevel permissionLevel;
 
     @Override
-    public void writeToStream(OutputStream stream, ObjectOutputStream writer)
+    public void writeToStream(OutputStream stream) throws IOException
     {
-        //TODO: implement this!
+        BinaryHelper.writeString(stream, this.username);
+        BinaryHelper.writeInt32(stream, this.permissionLevel.id);
     }
 
     @Override
-    public void readFromStream(InputStream stream, ObjectInputStream writer)
+    public void readFromStream(InputStream stream) throws IOException
     {
-        //TODO: implement this!
+        this.username = BinaryHelper.readString(stream);
+        this.permissionLevel = PermissionLevel.values()[BinaryHelper.readInt32(stream)];
     }
 }

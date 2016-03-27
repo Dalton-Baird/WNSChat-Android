@@ -1,8 +1,9 @@
 package com.daltonbaird.wnschat.packets;
 
+import com.daltonbaird.wnschat.utilities.BinaryHelper;
+
+import java.io.IOException;
 import java.io.InputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Date;
@@ -24,15 +25,39 @@ public class PacketPing extends Packet
     public List<Timestamp> timestamps;
 
     @Override
-    public void writeToStream(OutputStream stream, ObjectOutputStream writer)
+    public void writeToStream(OutputStream stream) throws IOException
     {
-        //TODO: implement this!
+        BinaryHelper.writeString(stream, this.sendingUsername);
+        BinaryHelper.writeString(stream, this.destinationUsername);
+        BinaryHelper.writeInt32(stream, this.packetState.id);
+
+        BinaryHelper.writeInt32(stream, this.timestamps.size()); //Write the length of the timestamp list
+
+        //Write the timestamps to the stream
+        for (Timestamp timestamp : this.timestamps)
+        {
+            BinaryHelper.writeString(stream, timestamp.username);
+            BinaryHelper.writeInt64(stream, timestamp.time.getTime()); //TODO: is this correct?
+        }
     }
 
     @Override
-    public void readFromStream(InputStream stream, ObjectInputStream writer)
+    public void readFromStream(InputStream stream) throws IOException
     {
-        //TODO: implement this!
+        this.sendingUsername = BinaryHelper.readString(stream);
+        this.destinationUsername = BinaryHelper.readString(stream);
+        this.packetState = State.values()[BinaryHelper.readInt32(stream)];
+
+        int listSize = BinaryHelper.readInt32(stream);
+        this.timestamps = new ArrayList<Timestamp>(listSize);
+
+        //Read the timestamps from the stream
+        for (int i = 0; i < listSize; i++)
+        {
+            String username = BinaryHelper.readString(stream);
+            Date time = new Date(BinaryHelper.readInt64(stream));
+            this.timestamps.add(new Timestamp(username, time));
+        }
     }
 
     /**

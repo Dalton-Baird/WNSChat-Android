@@ -1,5 +1,8 @@
 package com.daltonbaird.wnschat.packets;
 
+import com.daltonbaird.wnschat.utilities.BinaryHelper;
+
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -21,14 +24,14 @@ public class PacketDisconnect extends Packet
     }
 
     @Override
-    public void writeToStream(OutputStream stream, ObjectOutputStream writer)
+    public void writeToStream(OutputStream stream) throws IOException
     {
-        //TODO: implement this!
+        BinaryHelper.writeString(stream, this.reason);
     }
 
     @Override
-    public void readFromStream(InputStream stream, ObjectInputStream writer)
+    public void readFromStream(InputStream stream) throws IOException
     {
-        //TODO: implement this!
+        this.reason = BinaryHelper.readString(stream);
     }
 }
