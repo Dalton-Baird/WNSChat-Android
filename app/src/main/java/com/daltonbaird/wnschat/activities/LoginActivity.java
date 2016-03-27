@@ -1,6 +1,7 @@
 package com.daltonbaird.wnschat.activities;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
@@ -15,6 +16,7 @@ import android.widget.Toast;
 
 import com.daltonbaird.wnschat.Constants;
 import com.daltonbaird.wnschat.R;
+import com.daltonbaird.wnschat.functional.Func;
 import com.daltonbaird.wnschat.utilities.TextValidator;
 import com.daltonbaird.wnschat.viewmodels.ChatClientViewModel;
 
@@ -22,9 +24,6 @@ import java.net.InetAddress;
 
 public class LoginActivity extends AppCompatActivity
 {
-    /** The chat client */
-    private ChatClientViewModel chatClient;
-
     private boolean usernameValid = false;
     private boolean serverIPAddressValid = false;
     private boolean serverPortValid = false;
@@ -140,7 +139,47 @@ public class LoginActivity extends AppCompatActivity
     
     public void login(View view)
     {
-        Toast.makeText(LoginActivity.this, "login() called! Not yet implemented.", Toast.LENGTH_SHORT).show();
+        //Toast.makeText(LoginActivity.this, "login() called! Not yet implemented.", Toast.LENGTH_SHORT).show();
+
+        try
+        {
+            //Find objects
+            final EditText editTextUsername = (EditText) this.findViewById(R.id.editTextUsername);
+            final EditText editTextServerIP = (EditText) this.findViewById(R.id.editTextServerIP);
+            final EditText editTextServerPort = (EditText) this.findViewById(R.id.editTextServerPort);
+            final Button buttonConnect = (Button) this.findViewById(R.id.buttonConnect);
+
+            assert editTextUsername != null : "Username EditText was null!";
+            assert editTextServerIP != null : "Server IP EditText was null!";
+            assert editTextServerPort != null : "Server Port EditText was null!";
+            assert buttonConnect != null : "Connect Button was null!";
+
+            //Create chat client
+            ChatActivity.chatClient = new ChatClientViewModel(
+                    editTextUsername.getText().toString(),
+                    InetAddress.getByName(editTextServerIP.getText().toString()),
+                    Short.parseShort(editTextServerPort.getText().toString()));
+
+            ChatActivity.chatClient.connectToServer(new Func<String>()
+            {
+                @Override
+                public String invoke()
+                {
+                    Toast.makeText(LoginActivity.this, "Server requires a password, giving it an empty one since getting a password is not yet implemented.", Toast.LENGTH_LONG).show();
+                    return "";
+                }
+            });
+
+            //Start the ChatActivity
+            Intent intent = new Intent(this, ChatActivity.class);
+            this.startActivity(intent);
+
+        }
+        catch (Exception e)
+        {
+            Toast.makeText(LoginActivity.this, String.format("Error connecting: %s", e), Toast.LENGTH_LONG).show();
+            e.printStackTrace();
+        }
     }
 
     @Override

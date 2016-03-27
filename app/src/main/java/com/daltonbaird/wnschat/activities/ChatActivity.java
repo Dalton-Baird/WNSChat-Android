@@ -12,8 +12,8 @@ import com.daltonbaird.wnschat.viewmodels.ChatClientViewModel;
 
 public class ChatActivity extends AppCompatActivity
 {
-    /** The chat client */
-    private ChatClientViewModel chatClient;
+    /** The chat client. It is static so the login activity can access it. */
+    public static ChatClientViewModel chatClient;
 
     @Override
     protected void onCreate(Bundle savedInstanceState)

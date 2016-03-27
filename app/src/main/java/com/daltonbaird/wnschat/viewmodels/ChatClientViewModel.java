@@ -14,10 +14,12 @@ import com.daltonbaird.wnschat.packets.PacketPing;
 import com.daltonbaird.wnschat.packets.PacketServerInfo;
 import com.daltonbaird.wnschat.packets.PacketSimpleMessage;
 import com.daltonbaird.wnschat.packets.PacketUserInfo;
+import com.daltonbaird.wnschat.utilities.MathUtils;
 
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -40,9 +42,11 @@ public class ChatClientViewModel
 
     public ChatClientViewModel(String username, InetAddress serverIP, short port)
     {
+        this.messageLog = new ArrayList<Message>();
+
         this.serverIP = serverIP;
         this.serverPort = port;
-        this.clientUser = new ClientUser(username, PermissionLevel.USER);
+        this.clientUser = new ClientUser(username, PermissionLevel.USER, this);
 
         this.initCommands();
     }
@@ -150,7 +154,8 @@ public class ChatClientViewModel
                 if (serverInfo.passwordRequired) //If the server requires a password, get one from the user with the delegate
                 {
                     String password = getPassword.invoke();
-                    //TODO: compute SHA1 hash!
+
+                    passwordHash = MathUtils.sha1Hash(password); //Compute the SHA-1 hash of the password
                 }
 
                 //Login

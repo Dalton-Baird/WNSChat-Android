@@ -1,6 +1,7 @@
 package com.daltonbaird.wnschat;
 
 import com.daltonbaird.wnschat.commands.PermissionLevel;
+import com.daltonbaird.wnschat.viewmodels.ChatClientViewModel;
 
 /**
  * Created by Dalton on 3/26/2016.
@@ -13,15 +14,19 @@ public class ClientUser implements IUser
     /** The client's permission level */
     private PermissionLevel permissionLevel;
 
+    /** The chat client that the client user is associated with */
+    private ChatClientViewModel viewModel;
+
     public ClientUser()
     {
-        this(null, PermissionLevel.USER);
+        this(null, PermissionLevel.USER, null);
     }
 
-    public ClientUser(String username, PermissionLevel permissionLevel)
+    public ClientUser(String username, PermissionLevel permissionLevel, ChatClientViewModel viewModel)
     {
         this.username = username;
         this.permissionLevel = permissionLevel;
+        this.viewModel = viewModel;
     }
 
     @Override
@@ -51,6 +56,6 @@ public class ClientUser implements IUser
     @Override
     public void sendMessage(String message)
     {
-        //TODO: Implement this!
+        this.viewModel.displayMessage(message);
     }
 }
