@@ -1,26 +1,21 @@
 package com.daltonbaird.wnschat.activities;
 
-import android.database.DataSetObserver;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
-import android.widget.ListAdapter;
 import android.widget.ListView;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import com.daltonbaird.wnschat.NetworkManager;
 import com.daltonbaird.wnschat.R;
-import com.daltonbaird.wnschat.functional.Action1;
+import com.daltonbaird.wnschat.functional.UnaryAction;
 import com.daltonbaird.wnschat.messages.Message;
 import com.daltonbaird.wnschat.packets.PacketSimpleMessage;
-import com.daltonbaird.wnschat.utilities.MessageLogAdapter;
 import com.daltonbaird.wnschat.viewmodels.ChatClientViewModel;
 
 import java.util.ArrayList;
@@ -51,7 +46,7 @@ public class ChatActivity extends AppCompatActivity
         final ArrayAdapter<Message> messageArrayAdapter = new ArrayAdapter<Message>(this, android.R.layout.simple_list_item_1, messages);
         listViewMessages.setAdapter(messageArrayAdapter);
 
-        chatClient.messageAdded.add(new Action1<Message>()
+        chatClient.messageAdded.add(new UnaryAction<Message>()
         {
             @Override
             public void invoke(final Message message)

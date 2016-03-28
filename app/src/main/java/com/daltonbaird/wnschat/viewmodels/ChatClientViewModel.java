@@ -1,12 +1,15 @@
 package com.daltonbaird.wnschat.viewmodels;
 
 import com.daltonbaird.wnschat.ClientUser;
+import com.daltonbaird.wnschat.IUser;
 import com.daltonbaird.wnschat.NetworkManager;
 import com.daltonbaird.wnschat.ServerConnection;
+import com.daltonbaird.wnschat.commands.Command;
+import com.daltonbaird.wnschat.commands.Commands;
 import com.daltonbaird.wnschat.commands.PermissionLevel;
-import com.daltonbaird.wnschat.functional.Action;
-import com.daltonbaird.wnschat.functional.Action1;
-import com.daltonbaird.wnschat.functional.Func;
+import com.daltonbaird.wnschat.functional.BinaryAction;
+import com.daltonbaird.wnschat.functional.UnaryAction;
+import com.daltonbaird.wnschat.functional.Function;
 import com.daltonbaird.wnschat.messages.Message;
 import com.daltonbaird.wnschat.messages.MessageText;
 import com.daltonbaird.wnschat.packets.Packet;
@@ -17,16 +20,14 @@ import com.daltonbaird.wnschat.packets.PacketServerInfo;
 import com.daltonbaird.wnschat.packets.PacketSimpleMessage;
 import com.daltonbaird.wnschat.packets.PacketUserInfo;
 import com.daltonbaird.wnschat.utilities.EventHandler;
-import com.daltonbaird.wnschat.utilities.EventHandler1;
+import com.daltonbaird.wnschat.utilities.UnaryEventHandler;
 import com.daltonbaird.wnschat.utilities.MathUtils;
 import com.daltonbaird.wnschat.utilities.StringUtils;
 
+import java.io.Closeable;
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.net.InetAddress;
 import java.net.Socket;
-import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -60,12 +61,82 @@ public class ChatClientViewModel
 
     public void initCommands()
     {
+        List<Command> commandsToNotSend = new ArrayList<Command>();
 
+        Commands.say.execute.add(new BinaryAction<IUser, String>()
+        {
+            @Override
+            public void invoke(IUser iUser, String s)
+            {
+                NetworkManager.INSTANCE.writePacket(ChatClientViewModel.this.getServer().getSocket(), new PacketSimpleMessage(s));
+            }
+        });
+        commandsToNotSend.add(Commands.say);
+
+        Commands.logout.execute.add(new BinaryAction<IUser, String>()
+        {
+            @Override
+            public void invoke(IUser iUser, String s)
+            {
+                String disconnectReason = "Logging out";
+                //if (ChatClientViewModel.this.disconnectCommand.canExecute(disconnectReason))
+                //    this.disconnectCommand.execute(disconnectReason);
+                //TODO: Find out how to do this
+            }
+        });
+        commandsToNotSend.add(Commands.logout);
+
+        Commands.ping.execute.add(new BinaryAction<IUser, String>()
+        {
+            @Override
+            public void invoke(IUser iUser, String s)
+            {
+                String usernameToPing = s.trim();
+
+                PacketPing packet = new PacketPing();
+                packet.destinationUsername = usernameToPing;
+                packet.packetState = PacketPing.State.GOING_TO;
+                packet.sendingUsername = iUser.getUsername();
+
+                packet.addTimestamp(iUser.getUsername()); //Add a timestamp now
+
+                NetworkManager.INSTANCE.writePacket(ChatClientViewModel.this.getServer().getSocket(), packet); //Send the packet
+            }
+        });
+        commandsToNotSend.add(Commands.ping);
+
+        Commands.clear.execute.add(new BinaryAction<IUser, String>()
+        {
+            @Override
+            public void invoke(IUser iUser, String s)
+            {
+                //Dispose of the messages if they need disposed of
+                //for (Message message : ChatClientViewModel.this.messageLog)
+                //    if (message instanceof Closeable)
+                //        ((Closeable) message).close();
+
+                ChatClientViewModel.this.messageLog.clear();
+            }
+        });
+        commandsToNotSend.add(Commands.clear);
+
+        //Hook up unhandled commands to the say command so that the server can handle them
+        for (final Command command : Commands.allCommands)
+            if (!commandsToNotSend.contains(command))
+                command.execute.add(new BinaryAction<IUser, String>()
+                {
+                    @Override
+                    public void invoke(IUser iUser, String s)
+                    {
+                        Commands.say.onExecute(iUser, String.format("/%s %s", command.name, s));
+                    }
+                });
     }
 
     public void unInitCommands()
     {
-
+        for (Command command : Commands.allCommands)
+            command.clearExecuteHandlers();
     }
 
     public Socket getClient()
@@ -136,7 +207,7 @@ public class ChatClientViewModel
      * @param getPassword A function to call to get a password, if one is required
      * @return true if successful
      */
-    public boolean connectToServer(Func<String> getPassword)
+    public boolean connectToServer(Function<String> getPassword)
     {
         try
         {
@@ -375,6 +446,6 @@ public class ChatClientViewModel
         this.messageAdded.fire(message);
     }
 
-    public final EventHandler1<Action1<Message>, Message> messageAdded = new EventHandler1<>();
+    public final UnaryEventHandler<Message> messageAdded = new UnaryEventHandler<>();
     public final EventHandler disconnected = new EventHandler();
 }

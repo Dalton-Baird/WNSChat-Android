@@ -1,11 +1,8 @@
 package com.daltonbaird.wnschat.activities;
 
-import android.app.Activity;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.os.AsyncTask;
 import android.os.Bundle;
-import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.Menu;
@@ -18,7 +15,7 @@ import android.widget.Toast;
 
 import com.daltonbaird.wnschat.Constants;
 import com.daltonbaird.wnschat.R;
-import com.daltonbaird.wnschat.functional.Func;
+import com.daltonbaird.wnschat.functional.Function;
 import com.daltonbaird.wnschat.utilities.TextValidator;
 import com.daltonbaird.wnschat.viewmodels.ChatClientViewModel;
 
@@ -233,7 +230,7 @@ public class LoginActivity extends AppCompatActivity
                 @Override
                 public void run()
                 {
-                    ChatActivity.chatClient.connectToServer(new Func<String>()
+                    ChatActivity.chatClient.connectToServer(new Function<String>()
                     {
                         @Override
                         public String invoke()

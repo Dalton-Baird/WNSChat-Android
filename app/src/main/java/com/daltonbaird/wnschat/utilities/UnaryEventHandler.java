@@ -1,6 +1,6 @@
 package com.daltonbaird.wnschat.utilities;
 
-import com.daltonbaird.wnschat.functional.Action1;
+import com.daltonbaird.wnschat.functional.UnaryAction;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -8,31 +8,31 @@ import java.util.List;
 /**
  * Created by Dalton on 3/27/2016.
  */
-public class EventHandler1<A extends Action1<T>, T>
+public class UnaryEventHandler<T>
 {
     /** A list of registered event listeners */
-    protected List<A> listeners;
+    protected List<UnaryAction<T>> listeners;
 
-    public EventHandler1()
+    public UnaryEventHandler()
     {
-        this.listeners = new ArrayList<A>();
+        this.listeners = new ArrayList<UnaryAction<T>>();
     }
 
     /**
      * Fires the event, invoking all registered event listeners with the specified data
-     * @param data The data to pass to the event listeners
+     * @param param The data to pass to the event listeners
      */
-    public void fire(T data)
+    public void fire(T param)
     {
-        for (A action : this.listeners)
-            action.invoke(data);
+        for (UnaryAction<T> action : this.listeners)
+            action.invoke(param);
     }
 
     /**
      * Adds an event listener
      * @param listener The listener to add
      */
-    public void add(A listener)
+    public void add(UnaryAction<T> listener)
     {
         this.listeners.add(listener);
     }
@@ -42,8 +42,16 @@ public class EventHandler1<A extends Action1<T>, T>
      * @param listener The listener to remove
      * @return True if the listener existed
      */
-    public boolean remove(A listener)
+    public boolean remove(UnaryAction<T> listener)
     {
         return this.listeners.remove(listener);
+    }
+
+    /**
+     * Clears all of the registered event listeners
+     */
+    public void clear()
+    {
+        this.listeners.clear();
     }
 }

@@ -5,7 +5,7 @@ package com.daltonbaird.wnschat.functional;
  *
  * Created by Dalton on 3/26/2016.
  */
-public interface Func<TResult>
+public interface Function<TResult>
 {
     /** Call this to get the result of the function */
     TResult invoke();
