@@ -8,6 +8,7 @@ import com.daltonbaird.wnschat.commands.Command;
 import com.daltonbaird.wnschat.commands.CommandException;
 import com.daltonbaird.wnschat.commands.Commands;
 import com.daltonbaird.wnschat.commands.PermissionLevel;
+import com.daltonbaird.wnschat.eventhandlers.TernaryEventHandler;
 import com.daltonbaird.wnschat.functional.Action;
 import com.daltonbaird.wnschat.functional.BinaryAction;
 import com.daltonbaird.wnschat.functional.Function;
@@ -152,9 +153,8 @@ public class ChatClientViewModel
             public void invoke(IUser iUser, String s)
             {
                 String disconnectReason = "Logging out";
-                //if (ChatClientViewModel.this.disconnectCommand.canExecute(disconnectReason))
-                //    this.disconnectCommand.execute(disconnectReason);
-                //TODO: Find out how to do this
+                if (ChatClientViewModel.this.disconnectCommand.canExecute(disconnectReason))
+                    ChatClientViewModel.this.disconnectCommand.execute(disconnectReason);
             }
         });
         commandsToNotSend.add(Commands.logout);
@@ -188,7 +188,7 @@ public class ChatClientViewModel
                 //    if (message instanceof Closeable)
                 //        ((Closeable) message).close();
 
-                ChatClientViewModel.this.messageLog.clear();
+                ChatClientViewModel.this.messageLog.clear(); //TODO: This never gets seen by the Android activity, make an ObservableCollection that can show it
             }
         });
         commandsToNotSend.add(Commands.clear);
@@ -394,7 +394,7 @@ public class ChatClientViewModel
             this.server = null;
         }
 
-        this.disconnected.fire(); //Fire the disconnected event
+        this.disconnected.fire(clientDisconnectedReason, clientReasonIsBad, serverDisconnectReason); //Fire the disconnected event
     }
 
     /**
@@ -531,7 +531,13 @@ public class ChatClientViewModel
 
     public final UnaryEventHandler<Message> messageAdded = new UnaryEventHandler<>();
     public final EventHandler messageCleared = new EventHandler(); //Custom for the Java version, since it doesn't have WPF's data binding
-    public final EventHandler disconnected = new EventHandler();
+
+    /**
+     * Fired when the client gets disconnected. First string is the client's reason if the client
+     * initiated it, second string is the server's reason if the server initiated it.  Will NOT be fired
+     * on the UI thread. If the bool is true, the client reason is bad (an error).
+     */
+    public final TernaryEventHandler<String, Boolean, String> disconnected = new TernaryEventHandler<String, Boolean, String>();
 
     /** Called by this class to get the current message string */
     public Function<String> getMessageString = new Function<String>() //Custom for the Java version, since it doesn't have WPF's data binding

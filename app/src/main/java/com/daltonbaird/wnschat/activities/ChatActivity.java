@@ -13,6 +13,9 @@ import android.widget.Toast;
 
 import com.daltonbaird.wnschat.NetworkManager;
 import com.daltonbaird.wnschat.R;
+import com.daltonbaird.wnschat.functional.Action;
+import com.daltonbaird.wnschat.functional.Function;
+import com.daltonbaird.wnschat.functional.TernaryAction;
 import com.daltonbaird.wnschat.functional.UnaryAction;
 import com.daltonbaird.wnschat.messages.Message;
 import com.daltonbaird.wnschat.packets.PacketSimpleMessage;
@@ -20,6 +23,9 @@ import com.daltonbaird.wnschat.viewmodels.ChatClientViewModel;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.FutureTask;
 
 public class ChatActivity extends AppCompatActivity
 {
@@ -34,8 +40,10 @@ public class ChatActivity extends AppCompatActivity
 
         //Find objects
         final ListView listViewMessages = (ListView) this.findViewById(R.id.messageList);
+        final EditText editTextMessage = (EditText) this.findViewById(R.id.messageBox);
 
         assert listViewMessages != null : "Message list was null!";
+        assert editTextMessage != null : "Message Box was null!";
 
         //Hook up stuff
         //listViewMessages.setAdapter(new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, android.R.id.text1, chatClient.getMessageLog()));
@@ -51,13 +59,85 @@ public class ChatActivity extends AppCompatActivity
             @Override
             public void invoke(final Message message)
             {
-                listViewMessages.post(new Runnable()
+                ChatActivity.this.runOnUiThread(new Runnable()
                 {
                     @Override
                     public void run()
                     {
                         messages.add(message);
                         messageArrayAdapter.notifyDataSetChanged();
+                    }
+                });
+            }
+        });
+
+        chatClient.messageCleared.add(new Action()
+        {
+            @Override
+            public void invoke()
+            {
+                ChatActivity.this.runOnUiThread(new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        editTextMessage.getText().clear();
+                    }
+                });
+            }
+        });
+
+        chatClient.getMessageString = new Function<String>()
+        {
+            @Override
+            public String invoke()
+            {
+                FutureTask<String> futureResult = new FutureTask<String>(new Callable<String>()
+                {
+                    @Override
+                    public String call() throws Exception
+                    {
+                        return editTextMessage.getText().toString();
+                    }
+                });
+
+                ChatActivity.this.runOnUiThread(futureResult);
+
+                try
+                {
+                    return futureResult.get(); //Return the result
+                }
+                catch (InterruptedException|ExecutionException e)
+                {
+                    throw new RuntimeException("Error getting message text!", e);
+                }
+            }
+        };
+
+        chatClient.disconnected.add(new TernaryAction<String, Boolean, String>()
+        {
+            @Override
+            public void invoke(final String clientDisconnectReason, final Boolean clientReasonIsBad, final String serverDisconnectReason)
+            {
+                ChatActivity.this.runOnUiThread(new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        if (serverDisconnectReason != null)
+                        {
+                            //Show an error
+                            Toast.makeText(ChatActivity.this, String.format("Server closed connection.  Reason: %s", serverDisconnectReason), Toast.LENGTH_LONG).show();
+                        }
+
+                        if (clientReasonIsBad && clientDisconnectReason != null)
+                        {
+                            //Show an error
+                            Toast.makeText(ChatActivity.this, String.format("Error: Client had to close connection.  Reason: %s", clientDisconnectReason), Toast.LENGTH_LONG).show();
+                        }
+
+                        //Close the activity, automatically going back to the login activity
+                        ChatActivity.this.finish();
                     }
                 });
             }
@@ -79,7 +159,9 @@ public class ChatActivity extends AppCompatActivity
     {
         if (item.getItemId() == R.id.action_logout)
         {
-            Toast.makeText(this, "Logout selected", Toast.LENGTH_SHORT).show();
+            chatClient.logoutCommand.execute(null);
+
+            Toast.makeText(this, "Logged out", Toast.LENGTH_SHORT).show();
             return true;
         }
         else if (item.getItemId() == R.id.action_settings)
@@ -95,7 +177,7 @@ public class ChatActivity extends AppCompatActivity
 
     public boolean canSendMessage()
     {
-        return true; //TODO: implement this!
+        return chatClient.sendCommand.canExecute(null);
     }
 
     public void sendMessage(View view)
@@ -107,8 +189,8 @@ public class ChatActivity extends AppCompatActivity
 
             assert editTextMessage != null : "Message EditText was null!";
 
-            //TODO: Do this with commands instead!
-            NetworkManager.INSTANCE.writePacket(chatClient.getServer().getSocket(), new PacketSimpleMessage(editTextMessage.getText().toString()));
+            if (chatClient.sendCommand.canExecute(null)) //Send the message
+                chatClient.sendCommand.execute(null);
         }
         catch (Exception e)
         {

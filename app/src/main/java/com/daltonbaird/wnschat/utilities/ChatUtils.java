@@ -5,7 +5,6 @@ import com.daltonbaird.wnschat.commands.Command;
 import com.daltonbaird.wnschat.commands.CommandException;
 import com.daltonbaird.wnschat.commands.Commands;
 
-import java.util.regex.MatchResult;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -36,7 +35,7 @@ public class ChatUtils
                 throw new CommandException(String.format("Unknown command \"%s\"", message));
 
             int endOfCommandName = matcher.end();
-            String commandName = matcher.group();
+            String commandName = message.substring(1, endOfCommandName);
             restOfCommand = message.substring(endOfCommandName).trim();
 
             System.out.printf("ChatUtils.ParseCommand(%s, \"%s\"):\n", user, message);
