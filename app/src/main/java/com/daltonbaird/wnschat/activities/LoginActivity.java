@@ -2,6 +2,7 @@ package com.daltonbaird.wnschat.activities;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.content.ContextCompat;
@@ -131,6 +132,72 @@ public class LoginActivity extends AppCompatActivity
                 buttonConnect.setEnabled(LoginActivity.this.canLogin()); //Update the connect button's enabled status
             }
         });
+
+        //Load saved data
+        this.loadSettings();
+    }
+
+    @Override
+    protected void onStop()
+    {
+        this.saveSettings();
+
+        super.onStop();
+    }
+
+    /**
+     * Saves the settings for the activity
+     */
+    protected void saveSettings()
+    {
+        Log.i(this.getClass().getSimpleName(), "Saving settings...");
+
+        //Find objects
+        final EditText editTextUsername = (EditText) this.findViewById(R.id.editTextUsername);
+        final EditText editTextServerIP = (EditText) this.findViewById(R.id.editTextServerIP);
+        final EditText editTextServerPort = (EditText) this.findViewById(R.id.editTextServerPort);
+        final Button buttonConnect = (Button) this.findViewById(R.id.buttonConnect);
+
+        assert editTextUsername != null : "Username EditText was null!";
+        assert editTextServerIP != null : "Server IP EditText was null!";
+        assert editTextServerPort != null : "Server Port EditText was null!";
+        assert buttonConnect != null : "Connect Button was null!";
+
+        //Save settings
+        SharedPreferences preferences = this.getSharedPreferences("Login", 0);
+        SharedPreferences.Editor editor = preferences.edit();
+
+        editor.putString("Username", editTextUsername.getText().toString());
+        editor.putString("ServerIP", editTextServerIP.getText().toString());
+        editor.putString("ServerPort", editTextServerPort.getText().toString());
+
+        editor.apply();
+    }
+
+    /**
+     * Loads the settings for the activity
+     */
+    protected void loadSettings()
+    {
+        Log.i(this.getClass().getSimpleName(), "Loading settings...");
+
+        //Find objects
+        final EditText editTextUsername = (EditText) this.findViewById(R.id.editTextUsername);
+        final EditText editTextServerIP = (EditText) this.findViewById(R.id.editTextServerIP);
+        final EditText editTextServerPort = (EditText) this.findViewById(R.id.editTextServerPort);
+        final Button buttonConnect = (Button) this.findViewById(R.id.buttonConnect);
+
+        assert editTextUsername != null : "Username EditText was null!";
+        assert editTextServerIP != null : "Server IP EditText was null!";
+        assert editTextServerPort != null : "Server Port EditText was null!";
+        assert buttonConnect != null : "Connect Button was null!";
+
+        //Load settings
+        SharedPreferences preferences = this.getSharedPreferences("Login", 0);
+
+        editTextUsername.setText(preferences.getString("Username", "Android"));
+        editTextServerIP.setText(preferences.getString("ServerIP", "0.0.0.0"));
+        editTextServerPort.setText(preferences.getString("ServerPort", "9001"));
     }
 
     private boolean canLogin()
@@ -161,7 +228,7 @@ public class LoginActivity extends AppCompatActivity
                     InetAddress.getByName(editTextServerIP.getText().toString()),
                     Short.parseShort(editTextServerPort.getText().toString()));
 
-            new Thread()
+            new Thread() //Connect to the server on a new thread, since network I/O isn't allowed on the UI thread
             {
                 @Override
                 public void run()

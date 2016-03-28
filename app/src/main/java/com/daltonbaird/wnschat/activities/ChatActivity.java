@@ -17,10 +17,14 @@ import android.widget.Toast;
 
 import com.daltonbaird.wnschat.NetworkManager;
 import com.daltonbaird.wnschat.R;
+import com.daltonbaird.wnschat.functional.Action1;
 import com.daltonbaird.wnschat.messages.Message;
 import com.daltonbaird.wnschat.packets.PacketSimpleMessage;
 import com.daltonbaird.wnschat.utilities.MessageLogAdapter;
 import com.daltonbaird.wnschat.viewmodels.ChatClientViewModel;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class ChatActivity extends AppCompatActivity
 {
@@ -41,7 +45,28 @@ public class ChatActivity extends AppCompatActivity
         //Hook up stuff
         //listViewMessages.setAdapter(new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, android.R.id.text1, chatClient.getMessageLog()));
         //listViewMessages.setAdapter(new MessageLogAdapter(ChatActivity.this, chatClient.getMessageLog()));
-        listViewMessages.setAdapter(new ArrayAdapter<Message>(this, android.R.layout.simple_list_item_1, chatClient.getMessageLog()));
+
+        final List<Message> messages = new ArrayList<Message>();
+
+        final ArrayAdapter<Message> messageArrayAdapter = new ArrayAdapter<Message>(this, android.R.layout.simple_list_item_1, messages);
+        listViewMessages.setAdapter(messageArrayAdapter);
+
+        chatClient.messageAdded.add(new Action1<Message>()
+        {
+            @Override
+            public void invoke(final Message message)
+            {
+                listViewMessages.post(new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        messages.add(message);
+                        messageArrayAdapter.notifyDataSetChanged();
+                    }
+                });
+            }
+        });
     }
 
     @Override

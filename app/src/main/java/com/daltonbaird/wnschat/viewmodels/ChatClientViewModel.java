@@ -4,6 +4,8 @@ import com.daltonbaird.wnschat.ClientUser;
 import com.daltonbaird.wnschat.NetworkManager;
 import com.daltonbaird.wnschat.ServerConnection;
 import com.daltonbaird.wnschat.commands.PermissionLevel;
+import com.daltonbaird.wnschat.functional.Action;
+import com.daltonbaird.wnschat.functional.Action1;
 import com.daltonbaird.wnschat.functional.Func;
 import com.daltonbaird.wnschat.messages.Message;
 import com.daltonbaird.wnschat.messages.MessageText;
@@ -14,7 +16,10 @@ import com.daltonbaird.wnschat.packets.PacketPing;
 import com.daltonbaird.wnschat.packets.PacketServerInfo;
 import com.daltonbaird.wnschat.packets.PacketSimpleMessage;
 import com.daltonbaird.wnschat.packets.PacketUserInfo;
+import com.daltonbaird.wnschat.utilities.EventHandler;
+import com.daltonbaird.wnschat.utilities.EventHandler1;
 import com.daltonbaird.wnschat.utilities.MathUtils;
+import com.daltonbaird.wnschat.utilities.StringUtils;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -190,12 +195,7 @@ public class ChatClientViewModel
         catch (Exception e)
         {
             this.displayMessage(String.format("Error encountered in client loop: %s", e));
-
-            //TODO: Find a better way to do this
-            StringWriter sw = new StringWriter();
-            PrintWriter pw = new PrintWriter(sw);
-            e.printStackTrace(pw);
-            this.displayMessage(sw.toString());
+            this.displayMessage(StringUtils.getStackTrace(e));
 
             this.disconnectFromServer("Encountered an error while connecting", true, null);
             return false;
@@ -244,7 +244,7 @@ public class ChatClientViewModel
             this.server = null;
         }
 
-        //TODO: find out how to fire a disconnected event
+        this.disconnected.fire(); //Fire the disconnected event
     }
 
     /**
@@ -372,5 +372,9 @@ public class ChatClientViewModel
     public void displayMessage(Message message)
     {
         this.messageLog.add(message); //TODO: remove old messages
+        this.messageAdded.fire(message);
     }
+
+    public final EventHandler1<Action1<Message>, Message> messageAdded = new EventHandler1<>();
+    public final EventHandler disconnected = new EventHandler();
 }

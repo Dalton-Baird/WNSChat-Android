@@ -87,18 +87,29 @@ public class NetworkManager
      */
     public Packet readPacket(Socket socket)
     {
+        short packetID = -1;
+
         try
         {
-            short packetID = BinaryHelper.readByte(socket.getInputStream());
+            packetID = BinaryHelper.readByte(socket.getInputStream());
 
             Class<? extends Packet> packetClass = this.packetMap.get(packetID);
 
-            Packet packet = packetClass.newInstance(); //Create the packet object
+            Packet packet;
+
+            try
+            {
+                packet = packetClass.newInstance(); //Create the packet object
+            }
+            catch (InstantiationException|IllegalAccessException|NullPointerException e)
+            {
+                throw new RuntimeException(String.format("Error instantiating packet class for packet type \"%s\" with ID %d", packetClass, packetID), e);
+            }
 
             packet.readFromStream(socket.getInputStream()); //Have the packet read from the stream
             return packet;
         }
-        catch (IOException|InstantiationException|IllegalAccessException e)
+        catch (IOException e)
         {
             if (e instanceof EOFException)
                 throw new RuntimeException("Connection closed!", e);
