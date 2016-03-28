@@ -1,5 +1,6 @@
-package com.daltonbaird.wnschat.utilities;
+package com.daltonbaird.wnschat.eventhandlers;
 
+import com.daltonbaird.wnschat.functional.BinaryAction;
 import com.daltonbaird.wnschat.functional.UnaryAction;
 
 import java.util.ArrayList;
@@ -8,31 +9,32 @@ import java.util.List;
 /**
  * Created by Dalton on 3/27/2016.
  */
-public class UnaryEventHandler<T>
+public class BinaryEventHandler<T1, T2>
 {
     /** A list of registered event listeners */
-    protected List<UnaryAction<T>> listeners;
+    protected List<BinaryAction<T1, T2>> listeners;
 
-    public UnaryEventHandler()
+    public BinaryEventHandler()
     {
-        this.listeners = new ArrayList<UnaryAction<T>>();
+        this.listeners = new ArrayList<BinaryAction<T1, T2>>();
     }
 
     /**
      * Fires the event, invoking all registered event listeners with the specified data
-     * @param param The data to pass to the event listeners
+     * @param param1 The first parameter to pass to the event listeners
+     * @param param2 The second parameter to pass to the event listeners
      */
-    public void fire(T param)
+    public void fire(T1 param1, T2 param2)
     {
-        for (UnaryAction<T> action : this.listeners)
-            action.invoke(param);
+        for (BinaryAction<T1, T2> action : this.listeners)
+            action.invoke(param1, param2);
     }
 
     /**
      * Adds an event listener
      * @param listener The listener to add
      */
-    public void add(UnaryAction<T> listener)
+    public void add(BinaryAction<T1, T2> listener)
     {
         this.listeners.add(listener);
     }
@@ -42,7 +44,7 @@ public class UnaryEventHandler<T>
      * @param listener The listener to remove
      * @return True if the listener existed
      */
-    public boolean remove(UnaryAction<T> listener)
+    public boolean remove(BinaryAction<T1, T2> listener)
     {
         return this.listeners.remove(listener);
     }

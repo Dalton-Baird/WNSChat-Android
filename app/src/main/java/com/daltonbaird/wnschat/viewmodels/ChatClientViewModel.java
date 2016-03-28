@@ -5,11 +5,15 @@ import com.daltonbaird.wnschat.IUser;
 import com.daltonbaird.wnschat.NetworkManager;
 import com.daltonbaird.wnschat.ServerConnection;
 import com.daltonbaird.wnschat.commands.Command;
+import com.daltonbaird.wnschat.commands.CommandException;
 import com.daltonbaird.wnschat.commands.Commands;
 import com.daltonbaird.wnschat.commands.PermissionLevel;
+import com.daltonbaird.wnschat.functional.Action;
 import com.daltonbaird.wnschat.functional.BinaryAction;
-import com.daltonbaird.wnschat.functional.UnaryAction;
 import com.daltonbaird.wnschat.functional.Function;
+import com.daltonbaird.wnschat.functional.Predicate;
+import com.daltonbaird.wnschat.functional.UnaryAction;
+import com.daltonbaird.wnschat.functional.UnaryPredicate;
 import com.daltonbaird.wnschat.messages.Message;
 import com.daltonbaird.wnschat.messages.MessageText;
 import com.daltonbaird.wnschat.packets.Packet;
@@ -19,12 +23,13 @@ import com.daltonbaird.wnschat.packets.PacketPing;
 import com.daltonbaird.wnschat.packets.PacketServerInfo;
 import com.daltonbaird.wnschat.packets.PacketSimpleMessage;
 import com.daltonbaird.wnschat.packets.PacketUserInfo;
-import com.daltonbaird.wnschat.utilities.EventHandler;
-import com.daltonbaird.wnschat.utilities.UnaryEventHandler;
+import com.daltonbaird.wnschat.eventhandlers.EventHandler;
+import com.daltonbaird.wnschat.eventhandlers.UnaryEventHandler;
+import com.daltonbaird.wnschat.utilities.ButtonCommand;
+import com.daltonbaird.wnschat.utilities.ChatUtils;
 import com.daltonbaird.wnschat.utilities.MathUtils;
 import com.daltonbaird.wnschat.utilities.StringUtils;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Socket;
@@ -55,6 +60,74 @@ public class ChatClientViewModel
         this.serverIP = serverIP;
         this.serverPort = port;
         this.clientUser = new ClientUser(username, PermissionLevel.USER, this);
+
+        //Create commands
+        this.sendCommand = new ButtonCommand(new Action() //OnSend
+        {
+            @Override
+            public void invoke()
+            {
+                if (ChatClientViewModel.this.getServer().getSocket() != null)
+                {
+                    try //Try to parse the command
+                    {
+                        ChatUtils.CommandParseResult result = ChatUtils.parseCommand(ChatClientViewModel.this.getClientUser(), ChatClientViewModel.this.getMessageString.invoke());
+
+                        result.command.onExecute(ChatClientViewModel.this.getClientUser(), result.restOfCommand);
+                    }
+                    catch (CommandException e)
+                    {
+                        ChatClientViewModel.this.clientUser.sendMessage(String.format("Command Error: %s", e.getMessage()));
+                    }
+                }
+
+                ChatClientViewModel.this.messageCleared.fire();
+            }
+        },
+        new Predicate() //CanSend
+        {
+            @Override
+            public boolean invoke()
+            {
+                String message = ChatClientViewModel.this.getMessageString.invoke();
+
+                return ChatClientViewModel.this.getServer().getSocket() != null && ChatClientViewModel.this.getServer().getSocket().isConnected() && message != null && !message.isEmpty();
+            }
+        });
+
+        this.disconnectCommand = new ButtonCommand<String>(new UnaryAction<String>() //OnDisconnect
+        {
+            @Override
+            public void invoke(String s)
+            {
+                ChatClientViewModel.this.disconnectFromServer(s, false, null);
+            }
+        },
+        new UnaryPredicate<String>() //CanDisconnect
+        {
+            @Override
+            public boolean invoke(String s)
+            {
+                return ChatClientViewModel.this.getServer().getSocket() != null;
+            }
+        });
+
+        this.logoutCommand = new ButtonCommand(new Action() //OnLogout
+        {
+            @Override
+            public void invoke()
+            {
+                Commands.logout.onExecute(ChatClientViewModel.this.getClientUser(), ""); //Have the logout command handle it
+            }
+        },
+        new Predicate() //CanLogout
+        {
+            @Override
+            public boolean invoke()
+            {
+                return ChatClientViewModel.this.getServer().getSocket() != null && !ChatClientViewModel.this.getServer().getSocket().isOutputShutdown();
+            }
+        });
 
         this.initCommands();
     }
@@ -218,6 +291,9 @@ public class ChatClientViewModel
 
             this.displayMessage("Connected!");
 
+            this.sendCommand.onCanExecuteChanged(); //The send button's CanSend conditions changed
+            this.disconnectCommand.onCanExecuteChanged(); //The disconnect command's CanDisconnect conditions changed
+
             Packet packet = NetworkManager.INSTANCE.readPacket(this.server.getSocket());
 
             if (packet instanceof PacketServerInfo)
@@ -294,6 +370,9 @@ public class ChatClientViewModel
                 this.displayMessage(String.format("Error sending disconnect packet: %s", e));
             }
         }
+
+        this.sendCommand.onCanExecuteChanged(); //The send button's CanSend conditions changed
+        this.disconnectCommand.onCanExecuteChanged(); //The disconnect command's CanDisconnect conditions changed
 
         this.unInitCommands(); //Remove the command handlers
 
@@ -446,6 +525,21 @@ public class ChatClientViewModel
         this.messageAdded.fire(message);
     }
 
+    public final ButtonCommand sendCommand;
+    public final ButtonCommand disconnectCommand;
+    public final ButtonCommand logoutCommand;
+
     public final UnaryEventHandler<Message> messageAdded = new UnaryEventHandler<>();
+    public final EventHandler messageCleared = new EventHandler(); //Custom for the Java version, since it doesn't have WPF's data binding
     public final EventHandler disconnected = new EventHandler();
+
+    /** Called by this class to get the current message string */
+    public Function<String> getMessageString = new Function<String>() //Custom for the Java version, since it doesn't have WPF's data binding
+    {
+        @Override
+        public String invoke()
+        {
+            throw new RuntimeException("ERROR: ChatClientViewModel.getMessageString hasn't been changed from it's default value.  It should be hooked up by the Activity to get the message text.");
+        }
+    };
 }
