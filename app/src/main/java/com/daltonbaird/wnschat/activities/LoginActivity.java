@@ -16,6 +16,7 @@ import android.widget.Toast;
 import com.daltonbaird.wnschat.Constants;
 import com.daltonbaird.wnschat.R;
 import com.daltonbaird.wnschat.functional.Function;
+import com.daltonbaird.wnschat.functional.UnaryAction;
 import com.daltonbaird.wnschat.utilities.TextValidator;
 import com.daltonbaird.wnschat.viewmodels.ChatClientViewModel;
 
@@ -224,6 +225,15 @@ public class LoginActivity extends AppCompatActivity
                     editTextUsername.getText().toString(),
                     InetAddress.getByName(editTextServerIP.getText().toString()),
                     Short.parseShort(editTextServerPort.getText().toString()));
+
+            ChatActivity.chatClient.runOnUIThread = new UnaryAction<Runnable>()
+            {
+                @Override
+                public void invoke(Runnable runnable)
+                {
+                    LoginActivity.this.runOnUiThread(runnable);
+                }
+            };
 
             new Thread() //Connect to the server on a new thread, since network I/O isn't allowed on the UI thread
             {

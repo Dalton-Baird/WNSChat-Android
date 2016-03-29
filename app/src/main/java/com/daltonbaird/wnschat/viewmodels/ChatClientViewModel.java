@@ -8,7 +8,7 @@ import com.daltonbaird.wnschat.commands.Command;
 import com.daltonbaird.wnschat.commands.CommandException;
 import com.daltonbaird.wnschat.commands.Commands;
 import com.daltonbaird.wnschat.commands.PermissionLevel;
-import com.daltonbaird.wnschat.eventhandlers.TernaryEventHandler;
+import com.daltonbaird.wnschat.event.eventhandlers.TernaryEventHandler;
 import com.daltonbaird.wnschat.functional.Action;
 import com.daltonbaird.wnschat.functional.BinaryAction;
 import com.daltonbaird.wnschat.functional.Function;
@@ -24,11 +24,13 @@ import com.daltonbaird.wnschat.packets.PacketPing;
 import com.daltonbaird.wnschat.packets.PacketServerInfo;
 import com.daltonbaird.wnschat.packets.PacketSimpleMessage;
 import com.daltonbaird.wnschat.packets.PacketUserInfo;
-import com.daltonbaird.wnschat.eventhandlers.EventHandler;
-import com.daltonbaird.wnschat.eventhandlers.UnaryEventHandler;
+import com.daltonbaird.wnschat.event.eventhandlers.EventHandler;
+import com.daltonbaird.wnschat.event.eventhandlers.UnaryEventHandler;
 import com.daltonbaird.wnschat.utilities.ButtonCommand;
 import com.daltonbaird.wnschat.utilities.ChatUtils;
 import com.daltonbaird.wnschat.utilities.MathUtils;
+import com.daltonbaird.wnschat.utilities.ObservableList;
+import com.daltonbaird.wnschat.utilities.ObservableListAdapter;
 import com.daltonbaird.wnschat.utilities.StringUtils;
 
 import java.io.IOException;
@@ -52,11 +54,11 @@ public class ChatClientViewModel
 
     protected short serverPort;
 
-    protected List<Message> messageLog;
+    protected ObservableListAdapter<Message> messageLog;
 
     public ChatClientViewModel(String username, InetAddress serverIP, short port)
     {
-        this.messageLog = new ArrayList<Message>();
+        this.messageLog = new ObservableListAdapter<Message>(new ArrayList<Message>());
 
         this.serverIP = serverIP;
         this.serverPort = port;
@@ -79,6 +81,7 @@ public class ChatClientViewModel
                     catch (CommandException e)
                     {
                         ChatClientViewModel.this.clientUser.sendMessage(String.format("Command Error: %s", e.getMessage()));
+                        e.printStackTrace();
                     }
                 }
 
@@ -262,15 +265,15 @@ public class ChatClientViewModel
         this.serverPort = serverPort;
     }
 
-    public List<Message> getMessageLog()
+    public ObservableListAdapter<Message> getMessageLog()
     {
-        if (this.messageLog == null)
-            this.messageLog = new ArrayList<Message>();
+        //if (this.messageLog == null)
+        //    this.messageLog = new ArrayList<Message>();
 
         return messageLog;
     }
 
-    public void setMessageLog(List<Message> messageLog)
+    public void setMessageLog(ObservableListAdapter<Message> messageLog)
     {
         this.messageLog = messageLog;
     }
@@ -343,6 +346,7 @@ public class ChatClientViewModel
         {
             this.displayMessage(String.format("Error encountered in client loop: %s", e));
             this.displayMessage(StringUtils.getStackTrace(e));
+            e.printStackTrace();
 
             this.disconnectFromServer("Encountered an error while connecting", true, null);
             return false;
@@ -448,7 +452,8 @@ public class ChatClientViewModel
                         if (this.clientUser.getUsername().equals(packetPing.sendingUsername)) //It's my ping packet
                         {
                             this.displayMessage(packetPing.trace()); //Show the ping trace
-                        } else //It's somebody else's packet, but was sent to me
+                        }
+                        else //It's somebody else's packet, but was sent to me
                         {
                             this.displayMessage(String.format("ERROR: Got a ping packet sent back to user \"%s\", but this user is \"%s\"!", packetPing.sendingUsername, this.clientUser.getUsername()));
                         }
@@ -470,6 +475,7 @@ public class ChatClientViewModel
                 {
                     this.displayMessage(String.format("Error handling data from server!\n%s", e));
                     this.disconnectFromServer(String.format("Error handling data from server: %s", e), true, null);
+                    e.printStackTrace();
                 }
 
                 break; //Exit the for loop
@@ -519,17 +525,24 @@ public class ChatClientViewModel
      * Displays a message to the user
      * @param message The message to display
      */
-    public void displayMessage(Message message)
+    public void displayMessage(final Message message)
     {
-        this.messageLog.add(message); //TODO: remove old messages
-        this.messageAdded.fire(message);
+        this.runOnUIThread.invoke(new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                ChatClientViewModel.this.messageLog.add(message); //TODO: remove old messages
+            }
+        });
+        //this.messageAdded.fire(message);
     }
 
     public final ButtonCommand sendCommand;
     public final ButtonCommand disconnectCommand;
     public final ButtonCommand logoutCommand;
 
-    public final UnaryEventHandler<Message> messageAdded = new UnaryEventHandler<>();
+    //public final UnaryEventHandler<Message> messageAdded = new UnaryEventHandler<>();
     public final EventHandler messageCleared = new EventHandler(); //Custom for the Java version, since it doesn't have WPF's data binding
 
     /**
@@ -546,6 +559,16 @@ public class ChatClientViewModel
         public String invoke()
         {
             throw new RuntimeException("ERROR: ChatClientViewModel.getMessageString hasn't been changed from it's default value.  It should be hooked up by the Activity to get the message text.");
+        }
+    };
+
+    /** Called to run code on the UI thread */
+    public UnaryAction<Runnable> runOnUIThread = new UnaryAction<Runnable>()
+    {
+        @Override
+        public void invoke(Runnable runnable)
+        {
+            throw new RuntimeException("ERROR: ChatClientViewModel.runOnUIThread hasn't been changed from it's default value.  It should be hooked up by the Activity.");
         }
     };
 }

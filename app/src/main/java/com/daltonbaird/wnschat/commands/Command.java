@@ -1,7 +1,7 @@
 package com.daltonbaird.wnschat.commands;
 
 import com.daltonbaird.wnschat.IUser;
-import com.daltonbaird.wnschat.eventhandlers.BinaryEventHandler;
+import com.daltonbaird.wnschat.event.eventhandlers.BinaryEventHandler;
 
 /**
  * Created by Dalton on 3/27/2016.

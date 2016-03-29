@@ -2,11 +2,14 @@ package com.daltonbaird.wnschat.activities;
 
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.Toast;
@@ -41,19 +44,32 @@ public class ChatActivity extends AppCompatActivity
         //Find objects
         final ListView listViewMessages = (ListView) this.findViewById(R.id.messageList);
         final EditText editTextMessage = (EditText) this.findViewById(R.id.messageBox);
+        final Button sendButton = (Button) this.findViewById(R.id.sendButton);
 
         assert listViewMessages != null : "Message list was null!";
         assert editTextMessage != null : "Message Box was null!";
+        assert sendButton != null : "Send button was null!";
 
         //Hook up stuff
         //listViewMessages.setAdapter(new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, android.R.id.text1, chatClient.getMessageLog()));
         //listViewMessages.setAdapter(new MessageLogAdapter(ChatActivity.this, chatClient.getMessageLog()));
 
-        final List<Message> messages = new ArrayList<Message>();
+        //final List<Message> messages = new ArrayList<Message>();
 
-        final ArrayAdapter<Message> messageArrayAdapter = new ArrayAdapter<Message>(this, android.R.layout.simple_list_item_1, messages);
+        //final ArrayAdapter<Message> messageArrayAdapter = new ArrayAdapter<Message>(this, android.R.layout.simple_list_item_1, messages);
+        final ArrayAdapter<Message> messageArrayAdapter = new ArrayAdapter<Message>(this, android.R.layout.simple_list_item_1, chatClient.getMessageLog());
         listViewMessages.setAdapter(messageArrayAdapter);
 
+        chatClient.getMessageLog().listChanged.add(new Action()
+        {
+            @Override
+            public void invoke()
+            {
+                messageArrayAdapter.notifyDataSetChanged();
+            }
+        });
+
+        /*
         chatClient.messageAdded.add(new UnaryAction<Message>()
         {
             @Override
@@ -70,6 +86,7 @@ public class ChatActivity extends AppCompatActivity
                 });
             }
         });
+        */
 
         chatClient.messageCleared.add(new Action()
         {
@@ -114,6 +131,16 @@ public class ChatActivity extends AppCompatActivity
             }
         };
 
+        //Overwrite this from LoginActivity just in case
+        chatClient.runOnUIThread = new UnaryAction<Runnable>()
+        {
+            @Override
+            public void invoke(Runnable runnable)
+            {
+                ChatActivity.this.runOnUiThread(runnable);
+            }
+        };
+
         chatClient.disconnected.add(new TernaryAction<String, Boolean, String>()
         {
             @Override
@@ -141,6 +168,21 @@ public class ChatActivity extends AppCompatActivity
                     }
                 });
             }
+        });
+
+        editTextMessage.addTextChangedListener(new TextWatcher()
+        {
+            @Override
+            public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {}
+
+            @Override
+            public void onTextChanged(CharSequence charSequence, int i, int i1, int i2)
+            {
+                sendButton.setEnabled(ChatActivity.this.canSendMessage());
+            }
+
+            @Override
+            public void afterTextChanged(Editable editable) {}
         });
     }
 

@@ -1,6 +1,6 @@
 package com.daltonbaird.wnschat.utilities;
 
-import com.daltonbaird.wnschat.eventhandlers.EventHandler;
+import com.daltonbaird.wnschat.event.eventhandlers.EventHandler;
 import com.daltonbaird.wnschat.functional.Action;
 import com.daltonbaird.wnschat.functional.Predicate;
 import com.daltonbaird.wnschat.functional.UnaryPredicate;
