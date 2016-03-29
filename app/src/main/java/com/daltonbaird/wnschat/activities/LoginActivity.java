@@ -16,10 +16,12 @@ import android.widget.Toast;
 import com.daltonbaird.wnschat.Constants;
 import com.daltonbaird.wnschat.R;
 import com.daltonbaird.wnschat.functional.Function;
+import com.daltonbaird.wnschat.functional.UnaryAction;
 import com.daltonbaird.wnschat.utilities.TextValidator;
 import com.daltonbaird.wnschat.viewmodels.ChatClientViewModel;
 
 import java.net.InetAddress;
+import java.net.Socket;
 
 public class LoginActivity extends AppCompatActivity
 {
@@ -225,11 +227,22 @@ public class LoginActivity extends AppCompatActivity
                     InetAddress.getByName(editTextServerIP.getText().toString()),
                     Short.parseShort(editTextServerPort.getText().toString()));
 
+            ChatActivity.chatClient.runOnUIThread = new UnaryAction<Runnable>()
+            {
+                @Override
+                public void invoke(Runnable runnable)
+                {
+                    LoginActivity.this.runOnUiThread(runnable);
+                }
+            };
+
             new Thread() //Connect to the server on a new thread, since network I/O isn't allowed on the UI thread
             {
                 @Override
                 public void run()
                 {
+                    Log.i(LoginActivity.class.getSimpleName(), String.format("Connecting to server! Address: %s:%d", ChatActivity.chatClient.serverIP.get(), ChatActivity.chatClient.serverPort.get()));
+
                     ChatActivity.chatClient.connectToServer(new Function<String>()
                     {
                         @Override
@@ -239,6 +252,13 @@ public class LoginActivity extends AppCompatActivity
                             return "";
                         }
                     });
+
+                    Socket socket = ChatActivity.chatClient.tcpClient.get();
+
+                    if (socket != null && socket.isConnected())
+                        Log.i(LoginActivity.class.getSimpleName(), "Connected! (probably)");
+                    else
+                        Log.w(LoginActivity.class.getSimpleName(), "WARNING: server doesn't appear to be connected!");
                 }
             }.start();
 

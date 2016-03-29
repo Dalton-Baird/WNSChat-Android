@@ -1,5 +1,6 @@
 package com.daltonbaird.wnschat.activities;
 
+import android.databinding.DataBindingUtil;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.Menu;
@@ -13,6 +14,7 @@ import android.widget.Toast;
 
 import com.daltonbaird.wnschat.NetworkManager;
 import com.daltonbaird.wnschat.R;
+import com.daltonbaird.wnschat.databinding.ActivityChatBinding;
 import com.daltonbaird.wnschat.functional.Action;
 import com.daltonbaird.wnschat.functional.Function;
 import com.daltonbaird.wnschat.functional.TernaryAction;
@@ -36,7 +38,18 @@ public class ChatActivity extends AppCompatActivity
     protected void onCreate(Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_chat);
+        ActivityChatBinding binding = DataBindingUtil.setContentView(this, R.layout.activity_chat);
+        binding.setChatClient(chatClient);
+
+        //Change this to use this activity's runOnUiThread method, just in case
+        ChatActivity.chatClient.runOnUIThread = new UnaryAction<Runnable>()
+        {
+            @Override
+            public void invoke(Runnable runnable)
+            {
+                ChatActivity.this.runOnUiThread(runnable);
+            }
+        };
 
         //Find objects
         final ListView listViewMessages = (ListView) this.findViewById(R.id.messageList);
@@ -49,11 +62,22 @@ public class ChatActivity extends AppCompatActivity
         //listViewMessages.setAdapter(new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, android.R.id.text1, chatClient.getMessageLog()));
         //listViewMessages.setAdapter(new MessageLogAdapter(ChatActivity.this, chatClient.getMessageLog()));
 
-        final List<Message> messages = new ArrayList<Message>();
+        //final List<Message> messages = new ArrayList<Message>();
 
-        final ArrayAdapter<Message> messageArrayAdapter = new ArrayAdapter<Message>(this, android.R.layout.simple_list_item_1, messages);
+        //final ArrayAdapter<Message> messageArrayAdapter = new ArrayAdapter<Message>(this, android.R.layout.simple_list_item_1, messages);
+        final ArrayAdapter<Message> messageArrayAdapter = new ArrayAdapter<Message>(this, android.R.layout.simple_list_item_1, chatClient.messageLog);
         listViewMessages.setAdapter(messageArrayAdapter);
 
+        chatClient.messageLogModified.add(new Action()
+        {
+            @Override
+            public void invoke()
+            {
+                messageArrayAdapter.notifyDataSetChanged();
+            }
+        });
+
+        /*
         chatClient.messageAdded.add(new UnaryAction<Message>()
         {
             @Override
@@ -113,6 +137,7 @@ public class ChatActivity extends AppCompatActivity
                 }
             }
         };
+        */
 
         chatClient.disconnected.add(new TernaryAction<String, Boolean, String>()
         {

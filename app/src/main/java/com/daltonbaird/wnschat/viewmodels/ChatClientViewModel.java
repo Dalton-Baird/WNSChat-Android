@@ -1,5 +1,12 @@
 package com.daltonbaird.wnschat.viewmodels;
 
+import android.databinding.Observable;
+import android.databinding.ObservableArrayList;
+import android.databinding.ObservableField;
+import android.databinding.ObservableList;
+import android.databinding.ObservableShort;
+import android.util.Log;
+
 import com.daltonbaird.wnschat.ClientUser;
 import com.daltonbaird.wnschat.IUser;
 import com.daltonbaird.wnschat.NetworkManager;
@@ -42,6 +49,7 @@ import java.util.List;
  */
 public class ChatClientViewModel
 {
+    /*
     protected Socket client;
 
     protected ClientUser clientUser;
@@ -53,14 +61,27 @@ public class ChatClientViewModel
     protected short serverPort;
 
     protected List<Message> messageLog;
+    */
 
     public ChatClientViewModel(String username, InetAddress serverIP, short port)
     {
-        this.messageLog = new ArrayList<Message>();
+        //this.messageLog = new ArrayList<Message>();
 
-        this.serverIP = serverIP;
-        this.serverPort = port;
-        this.clientUser = new ClientUser(username, PermissionLevel.USER, this);
+        this.serverIP.set(serverIP);
+        this.serverPort.set(port);
+        this.clientUser.set(new ClientUser(username, PermissionLevel.USER, this));
+
+        //Hook up the message log to fire this event when modified
+        //this.messageLog.addOnListChangedCallback(new ObservableList.OnListChangedCallback<ObservableList<Message>>() //... (Doesn't work)
+
+        this.message.addOnPropertyChangedCallback(new Observable.OnPropertyChangedCallback()
+        {
+            @Override
+            public void onPropertyChanged(Observable observable, int i)
+            {
+                Log.i(this.getClass().getName(), "Message changed!");
+            }
+        });
 
         //Create commands
         this.sendCommand = new ButtonCommand(new Action() //OnSend
@@ -68,21 +89,22 @@ public class ChatClientViewModel
             @Override
             public void invoke()
             {
-                if (ChatClientViewModel.this.getServer().getSocket() != null)
+                if (ChatClientViewModel.this.server.get().getSocket() != null)
                 {
                     try //Try to parse the command
                     {
-                        ChatUtils.CommandParseResult result = ChatUtils.parseCommand(ChatClientViewModel.this.getClientUser(), ChatClientViewModel.this.getMessageString.invoke());
+                        ChatUtils.CommandParseResult result = ChatUtils.parseCommand(ChatClientViewModel.this.clientUser.get(), ChatClientViewModel.this.message.get());
 
-                        result.command.onExecute(ChatClientViewModel.this.getClientUser(), result.restOfCommand);
+                        result.command.onExecute(ChatClientViewModel.this.clientUser.get(), result.restOfCommand);
                     }
                     catch (CommandException e)
                     {
-                        ChatClientViewModel.this.clientUser.sendMessage(String.format("Command Error: %s", e.getMessage()));
+                        ChatClientViewModel.this.clientUser.get().sendMessage(String.format("Command Error: %s", e.getMessage()));
                     }
                 }
 
-                ChatClientViewModel.this.messageCleared.fire();
+                //ChatClientViewModel.this.messageCleared.fire();
+                ChatClientViewModel.this.message.set("");
             }
         },
         new Predicate() //CanSend
@@ -90,9 +112,9 @@ public class ChatClientViewModel
             @Override
             public boolean invoke()
             {
-                String message = ChatClientViewModel.this.getMessageString.invoke();
+                String message = ChatClientViewModel.this.message.get();
 
-                return ChatClientViewModel.this.getServer().getSocket() != null && ChatClientViewModel.this.getServer().getSocket().isConnected() && message != null && !message.isEmpty();
+                return ChatClientViewModel.this.server.get().getSocket() != null && ChatClientViewModel.this.server.get().getSocket().isConnected() && message != null && !message.isEmpty();
             }
         });
 
@@ -109,7 +131,7 @@ public class ChatClientViewModel
             @Override
             public boolean invoke(String s)
             {
-                return ChatClientViewModel.this.getServer().getSocket() != null;
+                return ChatClientViewModel.this.server.get().getSocket() != null;
             }
         });
 
@@ -118,7 +140,7 @@ public class ChatClientViewModel
             @Override
             public void invoke()
             {
-                Commands.logout.onExecute(ChatClientViewModel.this.getClientUser(), ""); //Have the logout command handle it
+                Commands.logout.onExecute(ChatClientViewModel.this.clientUser.get(), ""); //Have the logout command handle it
             }
         },
         new Predicate() //CanLogout
@@ -126,7 +148,7 @@ public class ChatClientViewModel
             @Override
             public boolean invoke()
             {
-                return ChatClientViewModel.this.getServer().getSocket() != null && !ChatClientViewModel.this.getServer().getSocket().isOutputShutdown();
+                return ChatClientViewModel.this.server.get().getSocket() != null && !ChatClientViewModel.this.server.get().getSocket().isOutputShutdown();
             }
         });
 
@@ -142,7 +164,7 @@ public class ChatClientViewModel
             @Override
             public void invoke(IUser iUser, String s)
             {
-                NetworkManager.INSTANCE.writePacket(ChatClientViewModel.this.getServer().getSocket(), new PacketSimpleMessage(s));
+                NetworkManager.INSTANCE.writePacket(ChatClientViewModel.this.server.get().getSocket(), new PacketSimpleMessage(s));
             }
         });
         commandsToNotSend.add(Commands.say);
@@ -173,7 +195,7 @@ public class ChatClientViewModel
 
                 packet.addTimestamp(iUser.getUsername()); //Add a timestamp now
 
-                NetworkManager.INSTANCE.writePacket(ChatClientViewModel.this.getServer().getSocket(), packet); //Send the packet
+                NetworkManager.INSTANCE.writePacket(ChatClientViewModel.this.server.get().getSocket(), packet); //Send the packet
             }
         });
         commandsToNotSend.add(Commands.ping);
@@ -212,6 +234,34 @@ public class ChatClientViewModel
             command.clearExecuteHandlers();
     }
 
+    //PROPERTIES
+
+    public final ObservableField<Socket> tcpClient = new ObservableField<Socket>();
+
+    public final ObservableField<ClientUser> clientUser = new ObservableField<ClientUser>();
+
+    public final ObservableField<ServerConnection> server = new ObservableField<ServerConnection>();
+
+    public final ObservableField<InetAddress> serverIP = new ObservableField<InetAddress>();
+
+    public final ObservableShort serverPort = new ObservableShort();
+
+    public final ObservableList<Message> messageLog = new ObservableArrayList<Message>();
+
+    public final ObservableField<String> message = new ObservableField<String>()
+    {
+        @Override
+        public void set(String value)
+        {
+            Log.i(this.getClass().getName(), "Message set() called!");
+
+            super.set(value);
+        }
+    };
+
+    //END PROPERTIES
+
+    /*
     public Socket getClient()
     {
         return client;
@@ -274,6 +324,7 @@ public class ChatClientViewModel
     {
         this.messageLog = messageLog;
     }
+    */
 
     /**
      * Attempts to connect to the server
@@ -284,17 +335,17 @@ public class ChatClientViewModel
     {
         try
         {
-            this.displayMessage(String.format("Connecting to server at %s:%d...", this.serverIP, this.serverPort));
+            this.displayMessage(String.format("Connecting to server at %s:%d...", this.serverIP.get(), this.serverPort.get()));
 
-            this.client = new Socket(this.serverIP, this.serverPort);
-            this.server = new ServerConnection(this.client);
+            this.tcpClient.set(new Socket(this.serverIP.get(), this.serverPort.get()));
+            this.server.set(new ServerConnection(this.tcpClient.get()));
 
             this.displayMessage("Connected!");
 
             this.sendCommand.onCanExecuteChanged(); //The send button's CanSend conditions changed
             this.disconnectCommand.onCanExecuteChanged(); //The disconnect command's CanDisconnect conditions changed
 
-            Packet packet = NetworkManager.INSTANCE.readPacket(this.server.getSocket());
+            Packet packet = NetworkManager.INSTANCE.readPacket(this.server.get().getSocket());
 
             if (packet instanceof PacketServerInfo)
             {
@@ -313,7 +364,7 @@ public class ChatClientViewModel
                 }
 
                 //Login
-                NetworkManager.INSTANCE.writePacket(this.server.getSocket(), new PacketLogin(NetworkManager.PROTOCOL_VERSION, this.clientUser.getUsername(), passwordHash));
+                NetworkManager.INSTANCE.writePacket(this.server.get().getSocket(), new PacketLogin(NetworkManager.PROTOCOL_VERSION, this.clientUser.get().getUsername(), passwordHash));
             }
             else if (packet instanceof PacketDisconnect)
             {
@@ -363,7 +414,7 @@ public class ChatClientViewModel
         {
             try
             {
-                NetworkManager.INSTANCE.writePacket(this.server.getSocket(), new PacketDisconnect(clientDisconnectedReason));
+                NetworkManager.INSTANCE.writePacket(this.server.get().getSocket(), new PacketDisconnect(clientDisconnectedReason));
             }
             catch (Exception e)
             {
@@ -378,11 +429,11 @@ public class ChatClientViewModel
 
         try
         {
-            if (this.client != null)
-                this.client.close();
+            if (this.tcpClient.get() != null)
+                this.tcpClient.get().close();
 
-            if (this.server != null)
-                this.server.close();
+            if (this.server.get() != null)
+                this.server.get().close();
         }
         catch (IOException e)
         {
@@ -390,8 +441,8 @@ public class ChatClientViewModel
         }
         finally
         {
-            this.client = null;
-            this.server = null;
+            this.tcpClient.set(null);
+            this.server.set(null);
         }
 
         this.disconnected.fire(clientDisconnectedReason, clientReasonIsBad, serverDisconnectReason); //Fire the disconnected event
@@ -402,14 +453,14 @@ public class ChatClientViewModel
      */
     public void processServerThread() //TODO: have this be able to disconnect
     {
-        if (this.server == null || this.server.getSocket() == null)
+        if (this.server.get() == null || this.server.get().getSocket() == null)
             throw new NullPointerException("Cannot listen to server, server or server socket is null!");
 
         for(;;) //Infinite loop
         {
             try
             {
-                Packet packet = NetworkManager.INSTANCE.readPacket(this.server.getSocket());
+                Packet packet = NetworkManager.INSTANCE.readPacket(this.server.get().getSocket());
 
                 //Decide what to do based on the packet type
                 if (packet instanceof PacketSimpleMessage)
@@ -434,23 +485,23 @@ public class ChatClientViewModel
                 {
                     PacketPing packetPing = (PacketPing)packet;
 
-                    packetPing.addTimestamp(this.clientUser.getUsername()); //Add a timestamp
+                    packetPing.addTimestamp(this.clientUser.get().getUsername()); //Add a timestamp
 
                     if (packetPing.packetState == PacketPing.State.GOING_TO) //The packet is going somewhere
                     {
                         //It got here
                         packetPing.packetState = PacketPing.State.GOING_BACK; //Send it back
-                        NetworkManager.INSTANCE.writePacket(this.server.getSocket(), packetPing);
+                        NetworkManager.INSTANCE.writePacket(this.server.get().getSocket(), packetPing);
                     }
                     else if (packetPing.packetState == PacketPing.State.GOING_BACK)
                     {
                         //Packet is going back to whoever sent it
-                        if (this.clientUser.getUsername().equals(packetPing.sendingUsername)) //It's my ping packet
+                        if (this.clientUser.get().getUsername().equals(packetPing.sendingUsername)) //It's my ping packet
                         {
                             this.displayMessage(packetPing.trace()); //Show the ping trace
                         } else //It's somebody else's packet, but was sent to me
                         {
-                            this.displayMessage(String.format("ERROR: Got a ping packet sent back to user \"%s\", but this user is \"%s\"!", packetPing.sendingUsername, this.clientUser.getUsername()));
+                            this.displayMessage(String.format("ERROR: Got a ping packet sent back to user \"%s\", but this user is \"%s\"!", packetPing.sendingUsername, this.clientUser.get().getUsername()));
                         }
                     }
                 }
@@ -458,15 +509,16 @@ public class ChatClientViewModel
                 {
                     PacketUserInfo packetUserInfo = (PacketUserInfo)packet;
 
-                    if (this.clientUser.getUsername().equals(packetUserInfo.username)) //If it's info about this client
+                    if (this.clientUser.get().getUsername().equals(packetUserInfo.username)) //If it's info about this client
                     {
-                        this.clientUser.setPermissionLevel(packetUserInfo.permissionLevel); //Update the permission level
+                        this.clientUser.get().setPermissionLevel(packetUserInfo.permissionLevel); //Update the permission level
+                        this.clientUser.notifyChange();
                     }
                 }
             }
             catch (Exception e)
             {
-                if (this.server != null && this.server.getSocket() != null) //Only show the errors and disconnect if the server exists
+                if (this.server.get() != null && this.server.get().getSocket() != null) //Only show the errors and disconnect if the server exists
                 {
                     this.displayMessage(String.format("Error handling data from server!\n%s", e));
                     this.disconnectFromServer(String.format("Error handling data from server: %s", e), true, null);
@@ -490,20 +542,21 @@ public class ChatClientViewModel
             if (serverInfo.protocolVersion < NetworkManager.PROTOCOL_VERSION) //Client is out of date
             {
                 this.displayMessage(String.format("The server is out of date! Client protocol version: %d.  Server protocol version: %d.", NetworkManager.PROTOCOL_VERSION, serverInfo.protocolVersion));
-                NetworkManager.INSTANCE.writePacket(this.server.getSocket(), new PacketDisconnect("Server out of date"));
+                NetworkManager.INSTANCE.writePacket(this.server.get().getSocket(), new PacketDisconnect("Server out of date"));
                 throw new RuntimeException("Out of date server.");
             }
             else if (serverInfo.protocolVersion > NetworkManager.PROTOCOL_VERSION) //Server is out of date
             {
                 this.displayMessage(String.format("Your client is out of date! Client protocol version: %d.  Server protocol version: %d.", NetworkManager.PROTOCOL_VERSION, serverInfo.protocolVersion));
-                NetworkManager.INSTANCE.writePacket(this.server.getSocket(), new PacketDisconnect("Client out of date"));
+                NetworkManager.INSTANCE.writePacket(this.server.get().getSocket(), new PacketDisconnect("Client out of date"));
                 throw new RuntimeException("Out of date client.");
             }
         }
 
         //Login stuff
-        this.server.setServerName(serverInfo.serverName);
-        this.server.setUserCount(serverInfo.userCount);
+        this.server.get().setServerName(serverInfo.serverName);
+        this.server.get().setUserCount(serverInfo.userCount);
+        this.server.notifyChange();
     }
 
     /**
@@ -519,18 +572,29 @@ public class ChatClientViewModel
      * Displays a message to the user
      * @param message The message to display
      */
-    public void displayMessage(Message message)
+    public void displayMessage(final Message message)
     {
-        this.messageLog.add(message); //TODO: remove old messages
-        this.messageAdded.fire(message);
+        this.runOnUIThread.invoke(new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                Log.i(this.getClass().getName(), "displayMessage() called! (on UI thread)");
+
+                ChatClientViewModel.this.messageLog.add(message); //TODO: remove old messages
+
+                ChatClientViewModel.this.messageLogModified.fire(); //The list just got changed (it can't notify itself for some reason, even when an event handler is manually registered)
+            }
+        });
+        //this.messageAdded.fire(message);
     }
 
     public final ButtonCommand sendCommand;
     public final ButtonCommand disconnectCommand;
     public final ButtonCommand logoutCommand;
 
-    public final UnaryEventHandler<Message> messageAdded = new UnaryEventHandler<>();
-    public final EventHandler messageCleared = new EventHandler(); //Custom for the Java version, since it doesn't have WPF's data binding
+    //public final UnaryEventHandler<Message> messageAdded = new UnaryEventHandler<>();
+    //public final EventHandler messageCleared = new EventHandler(); //Custom for the Java version, since it doesn't have WPF's data binding
 
     /**
      * Fired when the client gets disconnected. First string is the client's reason if the client
@@ -540,12 +604,26 @@ public class ChatClientViewModel
     public final TernaryEventHandler<String, Boolean, String> disconnected = new TernaryEventHandler<String, Boolean, String>();
 
     /** Called by this class to get the current message string */
-    public Function<String> getMessageString = new Function<String>() //Custom for the Java version, since it doesn't have WPF's data binding
+    /*public Function<String> getMessageString = new Function<String>() //Custom for the Java version, since it doesn't have WPF's data binding
     {
         @Override
         public String invoke()
         {
             throw new RuntimeException("ERROR: ChatClientViewModel.getMessageString hasn't been changed from it's default value.  It should be hooked up by the Activity to get the message text.");
+        }
+    };
+    */
+
+    /** Fired when the message log gets modified, since it's not technically bound, and can't notify by itself */
+    public final EventHandler messageLogModified = new EventHandler();
+
+    /** Runs code on the UI thread */
+    public UnaryAction<Runnable> runOnUIThread = new UnaryAction<Runnable>()
+    {
+        @Override
+        public void invoke(Runnable runnable)
+        {
+            throw new RuntimeException("ERROR: ChatClientViewModel.runOnUIThread hasn't been changed from it's default value.  It should be hooked up by the Activity.");
         }
     };
 }
